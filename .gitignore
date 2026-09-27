@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# ChestNet – keep big files out
+data/raw/
+data/processed/
+saved_models/
+*.h5
+*.pth
+*.pt
+*.ckpt
+
+
