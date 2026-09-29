@@ -1,0 +1,10 @@
+# Model 3 – EfficientNet (compound scaling), ImageNet-pretrained
+model:
+  name: efficientnet
+  variant: B0                   # B0 (224px, fast) or B3 (set data.image_size: 300)
+  pretrained: true
+  freeze_backbone: false
+  dropout: 0.3
+
+training:
+  learning_rate: 0.0001

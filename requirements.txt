@@ -1,16 +1,13 @@
-# ChestNet – core dependencies
-# For GPU training, install the CUDA build of torch/torchvision from https://pytorch.org first.
+# ChestNet – core dependencies (TensorFlow / Keras)
+# GPU on Linux / WSL2: replace "tensorflow" with "tensorflow[and-cuda]"
 
-torch>=2.1
-torchvision>=0.16
-timm>=0.9
-numpy>=1.24
+tensorflow>=2.16          # includes Keras 3
+keras-hub>=0.18           # pretrained ViT-B/16 backbone
+numpy>=1.26
 pandas>=2.0
 scikit-learn>=1.3
 matplotlib>=3.7
 seaborn>=0.13
 Pillow>=10.0
-opencv-python>=4.8
-grad-cam>=1.5
-tqdm>=4.66
+PyYAML>=6.0
 jupyter>=1.0

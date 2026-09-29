@@ -1,0 +1,9 @@
+# Model 2 – ResNet50, ImageNet-pretrained, fine-tuned (transfer learning)
+model:
+  name: resnet50
+  pretrained: true              # ImageNet weights
+  freeze_backbone: false        # fine-tune the whole network
+  dropout: 0.3
+
+training:
+  learning_rate: 0.0001         # low LR so pretrained features are not destroyed

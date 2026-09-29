@@ -1,0 +1,9 @@
+# Model 1 – Custom CNN trained from scratch (baseline)
+model:
+  name: custom_cnn
+  filters: [32, 64, 128, 256]   # one Conv-BN-ReLU-Conv-BN-ReLU-MaxPool block per entry
+  dense_units: 256
+  dropout: 0.5
+
+training:
+  learning_rate: 0.001          # higher LR: no pretrained weights to protect

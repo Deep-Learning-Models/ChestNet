@@ -1,0 +1,19 @@
+# Model 4 – Vision Transformer (attention-based, no convolutions in the encoder)
+model:
+  name: vit
+  pretrained: true              # true  -> ViT-B/16 ImageNet weights via keras-hub
+                                # false -> smaller ViT trained from scratch (settings below)
+  preset: vit_base_patch16_224_imagenet
+  patch_size: 16                # used when pretrained: false
+  hidden_dim: 384
+  num_layers: 6
+  num_heads: 6
+  mlp_dim: 1536
+  dropout: 0.1
+
+data:
+  batch_size: 16                # ViT-B/16 is memory-hungry
+
+training:
+  learning_rate: 0.00003        # transformers need a smaller LR when fine-tuning
+  weight_decay: 0.05

@@ -227,4 +227,5 @@ saved_models/
 *.pt
 *.ckpt
 
-
+# Label file: download from Kaggle (see data/README.md)
+data/Data_Entry_2017.csv
