@@ -1,7 +1,11 @@
 # ============================================================
-# ChestNet – shared settings used by ALL four models.
+# ChestNet – SHARED settings used by ALL four models (Step 7).
 # Keeping these identical makes the model comparison fair.
-# Each model config (e.g. resnet50.yaml) overrides only what it needs.
+#
+# 🔒 Locked keys (see LOCKED_KEYS in src/config.py) can ONLY be changed here.
+#    If a model config tries to change them, training stops with an error.
+# ✏️ A model config may override only: model.*, training.learning_rate,
+#    training.weight_decay and data.batch_size (each override is logged).
 # ============================================================
 
 seed: 42                      # fixes Python, NumPy and TensorFlow randomness
@@ -20,26 +24,35 @@ data:
     - Pneumonia
     - No Finding
   max_images_per_class: 1500           # balanced subset to keep training time realistic
-  val_size: 0.15                       # fraction of PATIENTS in validation
+  val_size: 0.15                       # fraction of PATIENTS in validation (tuning)
   test_size: 0.15                      # fraction of PATIENTS in test (evaluated once, at the end)
+  split_candidates: 200                # patient splits tried; the most label-balanced one is kept
+  min_positives_per_split: 30          # every class needs at least this many positives in val/test
   image_size: 224
   batch_size: 32
+  cache: disk                          # disk | memory | none  (resized uint8 images are cached once)
+  cache_dir: data/processed/cache      # git-ignored
 
-augmentation:                          # clinically plausible, mild augmentations only
-  horizontal_flip: true
+augmentation:                          # TRAINING set only; mild, clinically plausible changes
+  horizontal_flip: false               # off: a flipped X-ray puts the heart on the wrong side
   rotation: 0.03                       # fraction of a full circle (~±10 degrees)
-  contrast: 0.1
+  translation: 0.05                    # up to 5% shift (patient positioning)
+  zoom: 0.05                           # up to 5% zoom in/out
+  contrast: 0.1                        # exposure differences between machines
   brightness: 0.1
 
 training:
-  epochs: 30
+  epochs: 30                           # same maximum budget for every model
   optimizer: adamw
-  learning_rate: 0.0001
-  weight_decay: 0.0001
+  learning_rate: 0.0001                # may be overridden per model (justify in report)
+  weight_decay: 0.0001                 # may be overridden per model
   lr_schedule: cosine                  # cosine decay over all training steps
-  early_stopping_patience: 5           # stop when val AUC stops improving
+  loss: weighted_bce                   # sigmoid outputs + BCE weighted by #neg/#pos (train split)
+  max_pos_weight: null                 # optional cap for very rare classes (e.g. 20)
+  monitor: val_auc                     # early stopping + best checkpoint use validation macro AUC
+  early_stopping_patience: 5           # stop when val AUC has not improved for 5 epochs
   use_class_weights: true              # weighted BCE for rare diseases
-  threshold: 0.5                       # probability cut-off for precision / recall / F1
+  threshold: 0.5                       # default cut-off; per-class thresholds are tuned later on VALIDATION
 
 output:
   results_dir: results                 # metrics, plots, histories (committed)
