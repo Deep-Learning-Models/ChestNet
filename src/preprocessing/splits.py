@@ -17,6 +17,7 @@ What it does
 """
 import argparse
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -45,7 +46,12 @@ META_COLS = ["follow_up", "age", "gender", "view", "orig_width", "orig_height"]
 # --------------------------------------------------------------------------------------
 def _index_images(image_dir: Path) -> dict:
     """Map image file name -> full path (Kaggle stores images in images_001 ... images_012)."""
-    return {p.name: str(p) for p in image_dir.rglob("*.png")}
+    mapping = {}
+    for root, _, files in os.walk(str(image_dir), followlinks=True):
+        for f in files:
+            if f.lower().endswith(".png"):
+                mapping[f] = os.path.join(root, f)
+    return mapping
 
 
 def load_labels(cfg: dict, check_files: bool = True) -> pd.DataFrame:
