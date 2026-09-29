@@ -69,14 +69,18 @@ def main():
 
     # ---- data (same patient-level splits for every model) ----
     train_df, val_df, _ = load_splits(cfg)
-    train_ds = make_dataset(train_df, cfg, training=True)
-    val_ds = make_dataset(val_df, cfg, training=False)
+    train_ds = make_dataset(train_df, cfg, training=True, split="train")
+    val_ds = make_dataset(val_df, cfg, training=False, split="val")
     steps_per_epoch = len(train_ds)
     print(f"[train] {name}: {len(train_df)} train / {len(val_df)} val images")
 
     # ---- model ----
     model = build_model(cfg)
-    pos_weights = compute_pos_weights(train_df, classes) if cfg["training"].get("use_class_weights") else [1.0] * len(classes)
+    # Class weights come from the TRAIN split only (no leakage from validation/test).
+    pos_weights = (compute_pos_weights(train_df, classes, cfg["training"].get("max_pos_weight"))
+                   if cfg["training"].get("use_class_weights") else [1.0] * len(classes))
+    for o in cfg.get("protocol_overrides", []):
+        print(f"[train] override {o['key']}: {o['base']} -> {o['value']} ({o['reason']})")
     model.compile(
         optimizer=build_optimizer(cfg, steps_per_epoch),
         loss=weighted_bce(pos_weights),
@@ -91,12 +95,13 @@ def main():
     print(f"[train] parameters: {total_params:,} total / {trainable_params:,} trainable")
 
     ckpt_path = ckpt_dir / f"{name}_best.weights.h5"
+    monitor = cfg["training"].get("monitor", "val_auc")
     timer = EpochTimer()
     callbacks = [
         timer,
-        keras.callbacks.ModelCheckpoint(ckpt_path, monitor="val_auc", mode="max",
+        keras.callbacks.ModelCheckpoint(ckpt_path, monitor=monitor, mode="max",
                                         save_best_only=True, save_weights_only=True, verbose=1),
-        keras.callbacks.EarlyStopping(monitor="val_auc", mode="max", restore_best_weights=True,
+        keras.callbacks.EarlyStopping(monitor=monitor, mode="max", restore_best_weights=True,
                                       patience=cfg["training"]["early_stopping_patience"], verbose=1),
         keras.callbacks.CSVLogger(results_dir / "history.csv"),
     ]
@@ -124,6 +129,8 @@ def main():
             "tensorflow": tf.__version__,
         },
         "checkpoint": str(ckpt_path),
+        "pos_weights": {c: round(float(w), 3) for c, w in zip(classes, pos_weights)},
+        "protocol_overrides": cfg.get("protocol_overrides", []),
     }
     with open(results_dir / "training_summary.json", "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)

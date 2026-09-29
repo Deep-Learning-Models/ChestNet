@@ -130,9 +130,25 @@ Run every command from the repository root.
 python -m src.preprocessing.splits
 ```
 
-This writes `data/splits/train.csv`, `val.csv`, `test.csv` and `summary.csv` (class counts per split).
+This writes `data/splits/train.csv`, `val.csv`, `test.csv`, `summary.csv` (class counts per split) and `split_report.json` (proof that no patient or image is shared between splits).
 
-**2. Train a model**
+**2. Explore the data (EDA)**
+
+```bash
+python -m src.eda
+```
+
+This saves report-ready figures and `eda_summary.json` in `results/eda/`: label distributions, co-occurrence, sample X-rays, images per patient, age and gender, AP/PA view share and class balance per split.
+
+**3. Verify the shared training rules (before training any model)**
+
+```bash
+python -m src.check_pipeline
+```
+
+This checks that no model config changes a shared setting, that the splits have no leakage, that the input pipeline is correct and that augmentation touches the training set only. It saves `results/protocol/experimental_protocol.md` (a table for Report Section 5), `class_weights.csv` and `augmentation_preview.png`.
+
+**4. Train a model**
 
 ```bash
 python -m src.train --config configs/custom_cnn.yaml
@@ -143,13 +159,13 @@ python -m src.train --config configs/vit.yaml
 
 Add `--epochs 2` for a quick test run, or `--deterministic` for fully repeatable GPU results.
 
-**3. Evaluate on the test set (once per model, at the very end)**
+**5. Evaluate on the test set (once per model, at the very end)**
 
 ```bash
 python -m src.evaluate --config configs/resnet50.yaml
 ```
 
-**4. Grad-CAM heatmaps (CNN models)**
+**6. Grad-CAM heatmaps (CNN models)**
 
 ```bash
 python -m src.explain --config configs/resnet50.yaml --num-images 8
@@ -191,14 +207,18 @@ Full step-by-step instructions are in [`data/README.md`](data/README.md).
 
 ## ⚙️ Shared experimental protocol
 
-Every model follows the same rules so the comparison is fair.
+Every model follows the same rules so the comparison is fair. The rules live in `configs/base.yaml`, and `src/config.py` **locks** them: if a model config tries to change a shared setting, the run stops with an error.
 
-- 🖼️ **Preprocessing:** resize to 224 × 224 and normalise with ImageNet mean and standard deviation.
-- 🔄 **Augmentation:** small rotations, horizontal flips, and brightness/contrast jitter. Only clinically plausible changes are used.
-- 🧍 **Patient-level split:** each patient's images stay in **one** split (train / validation / test), which prevents data leakage.
-- ⚖️ **Class imbalance:** weighted binary cross-entropy loss.
-- 🧪 **Training:** sigmoid outputs, Adam/AdamW, cosine learning-rate decay, dropout and early stopping.
-- 🎲 **Reproducibility:** `seed: 42` in `configs/base.yaml` fixes Python, NumPy and TensorFlow randomness (`src/utils/seed.py`). Every run saves its exact config, hardware and training time to `results/<model>/`.
+| 🔒 Identical for all four models | ✏️ Allowed to differ per model (logged and justified) |
+|---|---|
+| Seed, classes, patient-level splits, image size (224 × 224), augmentation, max epochs, optimiser (AdamW), cosine LR schedule, weighted BCE loss, early stopping on validation AUC | Learning rate, weight decay, batch size (GPU memory), architecture settings |
+
+- 🖼️ **Preprocessing:** grayscale PNG → 224 × 224 with anti-aliasing → cached once as uint8 → 3-channel float (0–255). Each model normalises its own input as its first layer (Custom CNN ÷255, ResNet50 caffe BGR mean subtraction, EfficientNet built-in, ViT [-1, 1]), so the pipeline is identical and evaluation can never use the wrong normalisation.
+- 🔄 **Augmentation (training set only):** small rotation (±10°), shift and zoom (5%), brightness and contrast jitter. Horizontal flip is **off** because it puts the heart on the wrong side; it can be switched on for an ablation.
+- 🧍 **Patient-level split:** 70 / 15 / 15 by patient ID. Many random patient splits are tried and the most label-balanced one is kept, so rare diseases appear in validation and test. `split_report.json` records 0 shared patients and 0 shared images.
+- ⚖️ **Class imbalance:** weighted binary cross-entropy, with weights (#negatives / #positives) computed from the **training split only**.
+- 🧪 **Training:** sigmoid outputs, AdamW, cosine decay, dropout, early stopping and best checkpoint on validation macro AUC.
+- 🎲 **Reproducibility:** `seed: 42` fixes Python, NumPy and TensorFlow randomness. Every run saves its exact config, overrides, class weights, hardware and training time to `results/<model>/`.
 - 🔒 **The test set is evaluated once**, at the very end.
 
 ---
