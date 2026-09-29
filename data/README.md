@@ -51,11 +51,16 @@ This script:
 
 - keeps the 7 selected diseases and *No Finding* (set in `configs/base.yaml`),
 - samples up to 1,500 images per class for a balanced subset,
-- splits **by patient ID** (70 / 15 / 15) so no patient appears in two splits,
-- saves `train.csv`, `val.csv`, `test.csv` and `summary.csv` in `data/splits/`.
+- splits **by patient ID** (70 / 15 / 15) so no patient appears in two splits, keeping the most label-balanced of 200 candidate splits,
+- saves `train.csv`, `val.csv`, `test.csv`, `summary.csv` and `split_report.json` (leakage check) in `data/splits/`.
+
+Then run the EDA (`python -m src.eda`) and the pipeline check (`python -m src.check_pipeline`).
 
 ## 5. Known data-quality issues
 
 - **Label noise:** labels were extracted from reports by NLP, so some are wrong.
 - **Class imbalance:** diseases such as Pneumonia are rare, which is why training uses a weighted loss.
 - **Multiple images per patient:** handled by the patient-level split.
+- **Impossible ages:** a few records have ages above 100 (e.g. 414); they are treated as missing.
+- **"No Finding" conflicts:** "No Finding" is removed if an image also has a disease label.
+- **View position (AP vs PA):** bedside AP images are more common for sicker patients, which a model could use as a shortcut (see `results/eda/08_view_position.png`).
