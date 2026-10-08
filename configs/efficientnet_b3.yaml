@@ -1,0 +1,13 @@
+# Model 3b – EfficientNet-B3 at the SHARED 224 px (fair comparison with B0 and the other models)
+# Results go to results/efficientnet_b3/
+model:
+  name: efficientnet
+  run_name: efficientnet_b3     # own results folder + checkpoint (does not overwrite B0)
+  variant: B3                   # ~10.8 M backbone params (2.7x B0)
+  pretrained: true
+  freeze_backbone: false
+  freeze_bn: true
+  dropout: 0.3
+
+training:
+  learning_rate: 0.0001

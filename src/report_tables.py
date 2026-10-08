@@ -16,7 +16,8 @@ import pandas as pd
 
 RESULTS = Path("results")
 MODELS = [("custom_cnn", "Custom CNN"), ("resnet50", "ResNet50"),
-          ("efficientnet", "EfficientNet-B0"), ("vit", "ViT-B/16")]
+          ("efficientnet", "EfficientNet-B0"), ("efficientnet_b3", "EfficientNet-B3"),
+          ("vit", "ViT-B/16")]
 
 
 def _load(model):

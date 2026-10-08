@@ -1,10 +1,12 @@
-# Model 3 – EfficientNet (compound scaling), ImageNet-pretrained
+# Model 3a – EfficientNet-B0, ImageNet-pretrained  (the official entry in the 4-model comparison)
+# Results go to results/efficientnet/ and saved_models/efficientnet_best.weights.h5
 model:
   name: efficientnet
-  variant: B0                   # B0 (224px, fast) or B3 (set data.image_size: 300)
+  variant: B0                   # 224 px native, ~4.0 M backbone params
   pretrained: true
-  freeze_backbone: false
+  freeze_backbone: false        # fine-tune every conv layer...
+  freeze_bn: true               # ...but keep BatchNorm statistics from ImageNet (see src/models/efficientnet.py)
   dropout: 0.3
 
 training:
-  learning_rate: 0.0001
+  learning_rate: 0.0001         # low LR: pretrained features should change gently

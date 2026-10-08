@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.config import load_config
+from src.config import load_config, run_name
 from src.models import build_model
 from src.preprocessing.dataset import make_dataset
 from src.preprocessing.splits import load_splits
@@ -29,7 +29,7 @@ def main():
 
     cfg = load_config(args.config)
     set_seed(cfg["seed"])
-    name = cfg["model"]["name"]
+    name = run_name(cfg)   # e.g. "efficientnet" (B0) or "efficientnet_b3"
     classes = cfg["data"]["classes"]
     results_dir = Path(cfg["output"]["results_dir"]) / name
     results_dir.mkdir(parents=True, exist_ok=True)
