@@ -108,8 +108,36 @@ def load_config(model_config_path: str) -> dict:
         model_cfg = yaml.safe_load(f) or {}
     overrides = check_protocol(base, model_cfg, source=str(model_config_path))
     cfg = _deep_merge(base, model_cfg)
+    overrides += _apply_native_resolution(cfg, str(model_config_path))
     cfg["protocol_overrides"] = overrides   # saved with every run for the report
     return cfg
+
+
+def run_name(cfg: dict) -> str:
+    """Folder / checkpoint name of a run: model.run_name if set, otherwise model.name.
+
+    Lets several variants of one architecture (EfficientNet-B0 and -B3) keep separate
+    results/<run>/ folders and saved_models/<run>_best.weights.h5 files."""
+    return str(cfg["model"].get("run_name") or cfg["model"]["name"])
+
+
+def _apply_native_resolution(cfg: dict, source: str) -> list:
+    """ABLATION ONLY: let a model train at its native resolution (e.g. EfficientNet-B3 at 300 px).
+
+    data.image_size stays locked for the fair 4-model comparison. A config may set
+    model.native_resolution to run an extra, clearly labelled experiment, but only with its
+    own model.run_name, so it can never replace the fair-comparison results."""
+    native = cfg.get("model", {}).get("native_resolution")
+    base_size = cfg["data"]["image_size"]
+    if not native or int(native) == int(base_size):
+        return []
+    if run_name(cfg) == cfg["model"]["name"]:
+        raise ProtocolViolation(
+            f"{source} sets model.native_resolution={native} but has no model.run_name. Give the "
+            f"ablation its own run_name so it cannot overwrite the fair-comparison run.")
+    cfg["data"]["image_size"] = int(native)
+    return [{"key": "data.image_size", "value": int(native), "base": base_size,
+             "reason": "ABLATION ONLY (native resolution) - not part of the fair comparison"}]
 
 
 def save_config(cfg: dict, path: Path) -> None:
