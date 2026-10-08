@@ -5,7 +5,7 @@ Run once (all four models then share the same CSVs):
 
 What it does
 ------------
-1. Reads Data_Entry_2017.csv and turns "Finding Labels" into one 0/1 column per
+1. Reads the label CSV (configs/base.yaml -> data.csv_path) and turns "Finding Labels" into one 0/1 column per
    selected class (multi-label).
 2. Cleans the metadata (impossible ages, label conflicts) and keeps it for the EDA.
 3. Builds a balanced subset (up to N images per class, rarest class first).
@@ -34,8 +34,10 @@ _RENAME = {
     "Patient Age": "age",
     "Patient Gender": "gender",
     "View Position": "view",
-    "OriginalImage[Width": "orig_width",
+    "OriginalImage[Width": "orig_width",       # full dataset (Data_Entry_2017.csv)
     "Height]": "orig_height",
+    "OriginalImageWidth": "orig_width",         # Kaggle random sample (sample_labels.csv)
+    "OriginalImageHeight": "orig_height",
 }
 META_COLS = ["follow_up", "age", "gender", "view", "orig_width", "orig_height"]
 
@@ -43,9 +45,25 @@ META_COLS = ["follow_up", "age", "gender", "view", "orig_width", "orig_height"]
 # --------------------------------------------------------------------------------------
 # Step 3 – load, clean and scope
 # --------------------------------------------------------------------------------------
+def parse_age(age: pd.Series) -> pd.Series:
+    """Patient age in years.
+
+    The full label file stores numbers (58); the Kaggle random sample stores text such
+    as '058Y' (a few may use 'M' = months or 'D' = days). Both become numbers here.
+    """
+    if pd.api.types.is_numeric_dtype(age):
+        return age.astype(float)
+    s = age.astype(str).str.strip().str.upper()
+    number = pd.to_numeric(s.str.extract(r"(\d+)")[0], errors="coerce")
+    unit = s.str.extract(r"([YMD])$")[0].fillna("Y")
+    return number / unit.map({"Y": 1.0, "M": 12.0, "D": 365.0})
+
+
 def _index_images(image_dir: Path) -> dict:
     """Map image file name -> full path (Kaggle stores images in images_001 ... images_012)."""
-    return {p.name: str(p) for p in image_dir.rglob("*.png")}
+    # as_posix() writes "data/raw/..." with forward slashes, so split CSVs made on Windows
+    # also work on Linux / Google Colab (and the other way round).
+    return {p.name: p.as_posix() for p in image_dir.rglob("*.png")}
 
 
 def load_labels(cfg: dict, check_files: bool = True) -> pd.DataFrame:
@@ -73,8 +91,9 @@ def load_labels(cfg: dict, check_files: bool = True) -> pd.DataFrame:
         diseases = [c for c in classes if c != "No Finding"]
         conflict = (df["No Finding"] == 1) & (df[diseases].sum(axis=1) > 0)
         df.loc[conflict, "No Finding"] = 0
-    # (b) A few NIH ages are impossible (e.g. 414 years) -> treat as missing.
+    # (b) Ages as numbers; a few NIH ages are impossible (e.g. 414 years) -> treat as missing.
     if "age" in df.columns:
+        df["age"] = parse_age(df["age"])
         df["age_invalid"] = df["age"] > 100
         df.loc[df["age_invalid"], "age"] = np.nan
 
@@ -92,16 +111,22 @@ def load_labels(cfg: dict, check_files: bool = True) -> pd.DataFrame:
     return df
 
 
-def build_subset(cfg: dict) -> pd.DataFrame:
+def build_subset(cfg: dict, require_files: bool = True) -> pd.DataFrame:
     """Balanced subset: up to N images per class, filling the rarest class first.
 
     Because an image can carry several labels, a common class (e.g. Infiltration) is
     often already partly filled by images picked for rarer classes – those count too.
+
+    The images are chosen from the LABEL FILE ONLY (labels + seed), never from which
+    PNG files happen to be on disk. So every machine (laptop, Google Colab, a team
+    member's PC) picks exactly the same images, and on Colab only these images need to
+    be extracted from the 42 GB download (see `--list-only`).
+    require_files=False -> return the selection without checking the image files.
     """
     classes = cfg["data"]["classes"]
     n = cfg["data"]["max_images_per_class"]
     rng = np.random.default_rng(cfg["seed"])
-    df = load_labels(cfg)
+    df = load_labels(cfg, check_files=False)
 
     chosen = np.zeros(len(df), dtype=bool)
     for c in sorted(classes, key=lambda c: df[c].sum()):          # rarest first
@@ -110,7 +135,36 @@ def build_subset(cfg: dict) -> pd.DataFrame:
         take = max(0, min(n - already, len(pool)))
         if take:
             chosen[rng.choice(pool, size=take, replace=False)] = True
-    return df[chosen].reset_index(drop=True)
+    subset = df[chosen].reset_index(drop=True)
+    if not require_files:
+        return subset
+
+    image_dir = Path(cfg["data"]["image_dir"])
+    subset["path"] = subset["image"].map(_index_images(image_dir))
+    missing = subset.loc[subset["path"].isna(), "image"]
+    if len(missing):
+        raise FileNotFoundError(
+            f"[splits] {len(missing)} of the {len(subset)} selected images are not in {image_dir} "
+            f"(e.g. {missing.iloc[0]}). Every model must use the same images, so download them first. "
+            f"Only the selected images are needed: 'python -m src.preprocessing.splits --list-only' "
+            f"writes their names to {cfg['data']['splits_dir']}/subset_images.txt.")
+    return subset
+
+
+def write_subset_list(cfg: dict) -> Path:
+    """Save the names of the selected images (no image files needed).
+
+    Used on Google Colab: only these images are extracted from the full dataset ZIP.
+    """
+    classes = cfg["data"]["classes"]
+    subset = build_subset(cfg, require_files=False)
+    out = Path(cfg["data"]["splits_dir"])
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / "subset_images.txt"
+    path.write_text("\n".join(subset["image"]) + "\n", encoding="utf-8")
+    print(f"[splits] {len(subset)} images selected ({subset.patient_id.nunique()} patients) -> {path}")
+    print(subset[classes].sum().to_string())
+    return path
 
 
 # --------------------------------------------------------------------------------------
@@ -216,5 +270,10 @@ def load_splits(cfg: dict):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create patient-level train/val/test splits")
     parser.add_argument("--config", default=str(BASE_CONFIG))
+    parser.add_argument("--list-only", action="store_true",
+                        help="only save the names of the selected images (no image files needed)")
     args = parser.parse_args()
-    make_splits(load_config(args.config))
+    if args.list_only:
+        write_subset_list(load_config(args.config))
+    else:
+        make_splits(load_config(args.config))

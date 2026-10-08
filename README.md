@@ -10,7 +10,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16%2B-FF6F00?logo=tensorflow&logoColor=white)
 ![Keras](https://img.shields.io/badge/Keras-3-D00000?logo=keras&logoColor=white)
-![Dataset](https://img.shields.io/badge/dataset-NIH%20ChestX--ray14-blue)
+![Dataset](https://img.shields.io/badge/dataset-NIH%20Chest%20X--ray%20(random%20sample)-blue)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Current status:** 🚧 PIPELINE READY. Code for all four models, the shared configs and the random seeds is in place. Training runs and results are in progress.
@@ -190,16 +190,18 @@ python -m src.explain --config configs/resnet50.yaml --num-images 8
 
 | Item | Detail |
 |------|--------|
-| **Source** | [NIH ChestX-ray14](https://www.kaggle.com/datasets/nih-chest-xrays/data), NIH Clinical Center |
-| **Size** | 112,120 frontal chest X-rays from 30,805 patients |
-| **Labels** | 14 disease labels (multi-label) plus *No Finding* |
-| **Our scope** | 5–8 disease classes plus *No Finding*, with a balanced subset of about 1,000–2,000 images per class |
+| **Source** | [Random Sample of NIH Chest X-ray Dataset](https://www.kaggle.com/datasets/nih-chest-xrays/sample) (Kaggle), a random sample of [NIH ChestX-ray14](https://www.kaggle.com/datasets/nih-chest-xrays/data), NIH Clinical Center |
+| **Size** | 5,606 frontal chest X-rays (1024 × 1024 PNG), randomly sampled from the 112,120 images of the full dataset |
+| **Labels** | 14 disease labels (multi-label) plus *No Finding*, in `sample_labels.csv` |
+| **Our scope** | 7 disease classes plus *No Finding*. Every image of the 7 diseases is used; *No Finding* is capped at 1,500 images |
 
 **How to get the data**
 
 1. Download the dataset from the link above.
-2. Put the image folders in `data/raw/` and the label file (`Data_Entry_2017.csv`) in `data/`.
-3. `data/raw/` is listed in `.gitignore`, so images are **never** pushed to GitHub.
+2. Put the images in `data/raw/` (any sub-folder) and the label file (`sample_labels.csv`) in `data/`.
+3. `data/raw/` and the label file are listed in `.gitignore`, so they are **never** pushed to GitHub.
+
+> 💡 The code also works with the full dataset: set `data.csv_path` in `configs/base.yaml` to `data/Data_Entry_2017.csv`.
 
 Full step-by-step instructions are in [`data/README.md`](data/README.md).
 

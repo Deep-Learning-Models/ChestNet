@@ -11,7 +11,8 @@
 seed: 42                      # fixes Python, NumPy and TensorFlow randomness
 
 data:
-  csv_path: data/Data_Entry_2017.csv   # NIH label file
+  csv_path: data/sample_labels.csv     # Kaggle "Random Sample of NIH Chest X-ray Dataset" (5,606 images)
+                                       # full dataset instead: data/Data_Entry_2017.csv
   image_dir: data/raw                  # folder containing the PNG images (searched recursively)
   splits_dir: data/splits              # saved train/val/test CSVs (shared by every model)
   classes:                             # 7 diseases + No Finding (scoped subset of the 14 NIH labels)
@@ -23,11 +24,12 @@ data:
     - Nodule
     - Pneumonia
     - No Finding
-  max_images_per_class: 1500           # balanced subset to keep training time realistic
+  max_images_per_class: 1500           # cap per class; in the 5,606-image sample only "No Finding" reaches it
   val_size: 0.15                       # fraction of PATIENTS in validation (tuning)
   test_size: 0.15                      # fraction of PATIENTS in test (evaluated once, at the end)
   split_candidates: 200                # patient splits tried; the most label-balanced one is kept
-  min_positives_per_split: 30          # every class needs at least this many positives in val/test
+  min_positives_per_split: 10          # preferred minimum positives per class in val/test (rare classes such as
+                                       # Pneumonia have only a few dozen images in the sample)
   image_size: 224
   batch_size: 32
   cache: disk                          # disk | memory | none  (resized uint8 images are cached once)
