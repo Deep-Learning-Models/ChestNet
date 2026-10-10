@@ -1,0 +1,15 @@
+{
+  "notebook": "notebooks/vision-transformer-balanced-7685.ipynb",
+  "kaggle_title": "ChestNet ViT Balanced 7685 Comparison",
+  "kaggle_version_url": "https://www.kaggle.com/code/umaraazim/chestnet-vit-balanced-7685-comparison?scriptVersionId=357077062",
+  "kaggle_version_id": 357077062,
+  "dataset": "https://www.kaggle.com/datasets/nih-chest-xrays/data",
+  "accelerator": "GPU T4 x2",
+  "status_at_submission": "running",
+  "subset_images_expected": 7685,
+  "original_split_images_expected": {
+    "train": 5400,
+    "validation": 1109,
+    "test": 1176
+  }
+}
