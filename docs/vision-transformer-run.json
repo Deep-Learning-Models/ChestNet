@@ -1,0 +1,26 @@
+{
+  "notebook": "/Users/mac/Projects/ChestNet/notebooks/vision-transformer-improved.ipynb",
+  "sha256": "addb9dc0d16b7c29df260b95933ce9ae698133666bfa20f7ce9b296af34ffb91",
+  "kaggle_url": "https://www.kaggle.com/code/umaraazim/chestnet-vit-improved-training-and-scores?scriptVersionId=357006235",
+  "script_version_id": 357006235,
+  "status": "running",
+  "accelerator": "GPU T4 x2",
+  "training_time_budget_hours": 7.0,
+  "model_output": "/kaggle/working/chestnet_vit_improved/model.pt",
+  "report_output": "/kaggle/working/chestnet_vit_improved/score_explanation.md",
+  "validation": "Notebook schema and code parsing; synthetic data audit and metric checks; real ViT offline save/reload; CPU fixture training and checkpoint resume. CUDA/NIH results pending. Kaggle initialization confirmed both CUDA GPUs; image audit and final training results pending.",
+  "started_at": "2026-10-10T15:05:42+05:30",
+  "runtime_confirmed": {
+    "torch": "2.10.0+cu128",
+    "timm": "1.0.26",
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "sklearn": "1.6.1",
+    "python": "3.12.13",
+    "gpus": [
+      "Tesla T4",
+      "Tesla T4"
+    ],
+    "effective_batch": 32
+  }
+}

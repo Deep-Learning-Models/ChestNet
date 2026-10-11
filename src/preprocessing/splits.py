@@ -17,6 +17,7 @@ What it does
 """
 import argparse
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -60,10 +61,13 @@ def parse_age(age: pd.Series) -> pd.Series:
 
 
 def _index_images(image_dir: Path) -> dict:
-    """Map image file name -> full path (Kaggle stores images in images_001 ... images_012)."""
-    # as_posix() writes "data/raw/..." with forward slashes, so split CSVs made on Windows
-    # also work on Linux / Google Colab (and the other way round).
-    return {p.name: p.as_posix() for p in image_dir.rglob("*.png")}
+    """Map PNG names to forward-slash paths, following linked image directories."""
+    mapping = {}
+    for root, _, files in os.walk(str(image_dir), followlinks=True):
+        for filename in files:
+            if filename.lower().endswith(".png"):
+                mapping[filename] = (Path(root) / filename).as_posix()
+    return mapping
 
 
 def load_labels(cfg: dict, check_files: bool = True) -> pd.DataFrame:
