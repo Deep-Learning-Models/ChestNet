@@ -13,7 +13,7 @@ from pathlib import Path
 import keras
 import tensorflow as tf
 
-from src.config import load_config, save_config
+from src.config import load_config, run_name, save_config
 from src.models import build_model
 from src.preprocessing.dataset import compute_pos_weights, make_dataset
 from src.preprocessing.splits import load_splits
@@ -59,7 +59,7 @@ def main():
         cfg["training"]["epochs"] = args.epochs
     set_seed(cfg["seed"], deterministic_ops=args.deterministic)
 
-    name = cfg["model"]["name"]
+    name = run_name(cfg)   # e.g. "efficientnet" (B0) or "efficientnet_b3"
     classes = cfg["data"]["classes"]
     results_dir = Path(cfg["output"]["results_dir"]) / name
     ckpt_dir = Path(cfg["output"]["checkpoint_dir"])

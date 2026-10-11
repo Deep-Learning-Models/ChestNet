@@ -12,7 +12,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.config import load_config
+from src.config import load_config, run_name
 from src.models import build_model, gradcam_layer
 from src.preprocessing.dataset import _load_image
 from src.preprocessing.splits import load_splits
@@ -29,7 +29,7 @@ def main():
 
     cfg = load_config(args.config)
     set_seed(cfg["seed"])
-    name = cfg["model"]["name"]
+    name = run_name(cfg)   # e.g. "efficientnet" (B0) or "efficientnet_b3"
     layer = gradcam_layer(cfg)
     if layer is None:
         raise SystemExit(f"Grad-CAM is only set up for the CNN models, not '{name}'.")

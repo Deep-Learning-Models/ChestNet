@@ -1,0 +1,18 @@
+# ABLATION – EfficientNet-B3 at its NATIVE 300 px. NOT part of the fair 4-model comparison.
+# Question it answers: "does the resolution part of compound scaling help on chest X-rays?"
+# Compare it ONLY with efficientnet_b3 (same model, 224 px). Results go to results/efficientnet_b3_300/
+model:
+  name: efficientnet
+  run_name: efficientnet_b3_300
+  variant: B3
+  native_resolution: 300        # loads + caches the X-rays at 300 px for this run only (logged as ABLATION)
+  pretrained: true
+  freeze_backbone: false
+  freeze_bn: true
+  dropout: 0.3
+
+data:
+  batch_size: 16                # 300 px images use ~1.8x the GPU memory of 224 px
+
+training:
+  learning_rate: 0.0001

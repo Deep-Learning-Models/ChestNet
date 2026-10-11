@@ -28,7 +28,7 @@ import pandas as pd
 from PIL import Image
 
 from src.config import BASE_CONFIG, load_config
-from src.preprocessing.splits import _RENAME, load_labels
+from src.preprocessing.splits import _RENAME, load_labels, parse_age
 
 # Colours (validated colour-blind-safe reference palette)
 BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
@@ -70,7 +70,7 @@ def label_distribution_full(raw: pd.DataFrame, classes, out: Path) -> dict:
     colors = [BLUE if c in classes else MUTED for c in counts.index]
     fig, ax = plt.subplots(figsize=(9, 6))
     _hbar(ax, counts.index, counts.values, colors, total=len(raw))
-    ax.set_title("NIH ChestX-ray14 – images per label (full dataset)")
+    ax.set_title("NIH ChestX-ray – images per label (all images in the label file)")
     ax.set_xlabel("number of images (an image can have several labels)")
     ax.text(0.99, 0.02, "blue = selected for ChestNet   grey = not used", transform=ax.transAxes,
             ha="right", fontsize=8, color=INK2)
@@ -146,7 +146,7 @@ def images_per_patient(raw: pd.DataFrame, out: Path) -> dict:
     fig, ax = plt.subplots(figsize=(7, 3.8))
     ax.hist(per_patient.clip(upper=30), bins=30, color=BLUE, edgecolor="white", linewidth=1)
     ax.set_yscale("log")
-    ax.set_title("Images per patient (full dataset) – why we split by patient")
+    ax.set_title("Images per patient (all images in the label file) – why we split by patient")
     ax.set_xlabel("images per patient (30 = 30 or more)")
     ax.set_ylabel("patients (log scale)")
     ax.grid(axis="x", visible=False)
@@ -260,7 +260,7 @@ def run_eda(cfg: dict, n_samples: int = 3) -> dict:
         summary["original_image_size"]["most_common"] = "x".join(map(str, summary["original_image_size"]["most_common"]))
 
     # Data-quality issues to discuss in Report Section 3.
-    ages = pd.read_csv(cfg["data"]["csv_path"])["Patient Age"] if "Patient Age" in pd.read_csv(cfg["data"]["csv_path"], nrows=1) else None
+    ages = parse_age(raw["age"]) if "age" in raw.columns else None   # '058Y' text in the sample
     counts = summary["class_counts_analysed"]
     summary["data_quality_issues"] = {
         "label_noise": "Labels were text-mined from radiology reports with NLP (the NIH paper reports "

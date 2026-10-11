@@ -229,3 +229,4 @@ saved_models/
 
 # Label file: download from Kaggle (see data/README.md)
 data/Data_Entry_2017.csv
+data/sample_labels.csv
