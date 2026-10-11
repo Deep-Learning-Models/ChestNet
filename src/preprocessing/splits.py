@@ -45,12 +45,12 @@ META_COLS = ["follow_up", "age", "gender", "view", "orig_width", "orig_height"]
 # Step 3 – load, clean and scope
 # --------------------------------------------------------------------------------------
 def _index_images(image_dir: Path) -> dict:
-    """Map image file name -> full path (Kaggle stores images in images_001 ... images_012)."""
+    """Map image names to portable paths, following linked image directories."""
     mapping = {}
     for root, _, files in os.walk(str(image_dir), followlinks=True):
-        for f in files:
-            if f.lower().endswith(".png"):
-                mapping[f] = os.path.join(root, f)
+        for filename in files:
+            if filename.lower().endswith(".png"):
+                mapping[filename] = (Path(root) / filename).as_posix()
     return mapping
 
 
